@@ -1,7 +1,7 @@
 use std::io;
 use crate::graph::ImdbGraph;
 
-pub fn select_actor(graph: &mut ImdbGraph) -> (&String, &String) {
+pub fn select_actor(graph: &ImdbGraph) -> (String, String) {
     println!("Choose an actor to travel from:");
     let first_choice = ask_user(graph);
 
@@ -12,7 +12,7 @@ pub fn select_actor(graph: &mut ImdbGraph) -> (&String, &String) {
 }
 
 // asks the user to pick an actor
-fn ask_user(graph: &mut ImdbGraph) -> &String {
+fn ask_user(graph: &ImdbGraph) -> String {
     let mut choice = String::new();
     let stdin = io::stdin();
     match stdin.read_line(&mut choice) {
@@ -21,8 +21,8 @@ fn ask_user(graph: &mut ImdbGraph) -> &String {
             return ask_user(graph);
         },
         Ok(_) => {
-            choice.pop();
-            match graph.match_actors(&choice) {
+            let matches = graph.match_actors(&choice.trim());
+            match matches {
                 None => {
                     println!("No matches, choose again:");
                     return ask_user(graph);
@@ -38,10 +38,19 @@ fn ask_user(graph: &mut ImdbGraph) -> &String {
     }
 }
 
-fn choose_match<'a>(graph: &mut ImdbGraph, matches: Vec<&'a String>) -> &'a String {
+fn choose_match(graph: &ImdbGraph, matches: Vec<String>) -> String {
     println!("Choose a match by typing the corresponding number");
-    for (index, key) in matches.iter().enumerate() {
-        println!("{} - {}", index, graph.print_edges(*key).unwrap());
+    let mut index = 1;
+    for key in &matches {
+        let movies = graph.print_edges(key);
+        match movies {
+          None => {},
+          Some(data) => {
+            println!("{} - {}", index, data);
+            index += 1;
+          }
+        }
+
     }
 
     let mut choice = String::new();
@@ -52,13 +61,14 @@ fn choose_match<'a>(graph: &mut ImdbGraph, matches: Vec<&'a String>) -> &'a Stri
             return choose_match(graph, matches);
         },
         Ok(_) => {
-            match choice.parse::<usize>() {
+            match choice.trim().parse::<usize>() {
                 Err(_) => {
                     println!("Error reading user input.");
                     return choose_match(graph, matches);
                 },
                 Ok(index) => {
-                    return matches.get(index).unwrap();
+                    let key = matches.get(index-1).unwrap();
+                    return key.clone();
                 }
             }
         }
