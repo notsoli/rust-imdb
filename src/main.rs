@@ -9,11 +9,11 @@ use input::select_actor;
 
 static IMDB_DIRECTORY: &str = "imdb/"; // REMEMBER: root is cargo.toml
 
-// static ACTOR_FILE: &str = "name.basics.tsv";
-// static TITLE_FILE: &str = "title.basics.tsv";
+static ACTOR_FILE: &str = "name.basics.tsv";
+static TITLE_FILE: &str = "title.basics.tsv";
 
-static ACTOR_FILE: &str = "testActors2.tsv";
-static TITLE_FILE: &str = "testMovies2.tsv";
+// static ACTOR_FILE: &str = "testActors2.tsv";
+// static TITLE_FILE: &str = "testMovies2.tsv";
 
 fn main() {
     let mut graph = ImdbGraph::new();

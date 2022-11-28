@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::collections::HashSet;
 
 pub struct Diagnostics {
     pub invalid_titles: u32,
@@ -88,64 +87,72 @@ impl ImdbGraph {
         self: &'a ImdbGraph,
         source: &'a String,
         destination: &String,
-    ) -> Option<HashSet<&String>> {
+    ) -> Option<HashMap<&String, &String>> {
         // create a list of future and visited nodes
-        let mut queue: Vec<(&String, bool)> = Vec::new();
-        queue.push((source, true));
-        let mut visited: HashSet<&String> = HashSet::new();
+        let mut queue = vec![(source, source, true)];
+        let mut visited: HashMap<&String, &String> = HashMap::new();
 
-        // iterate through queue until it's empty or a match has been found
+        // iterate through queue
         let mut found = false;
         while !queue.is_empty() && !found {
-            // bump the queue
-            let (current_ref, is_actor) = queue.pop().unwrap();
+            // bump the queue and add to visited nodes
+            let (current, source, is_actor) = queue.pop().unwrap();
+            visited.insert(current, source);
 
-            // make sure current node hasn't been visited already
-            if visited.get(current_ref) == None {
-                // add to visited
-                visited.insert(current_ref);
+            // determine what hashmap to draw from
+            let target_list = if is_actor {
+                &self.actor_edges } else { &self.title_edges };
 
-                // determine what hashmap to draw from
-                let target_list = if is_actor {
-                    &self.actor_edges } else { &self.title_edges };
-
-                // add neighbors to queue
-                match target_list.get(current_ref) {
-                    Some(edges) => {
-                        for edge in edges {
-                            if edge == destination {
-                                found = true;
-                                break;
-                            } else {
-                                queue.push((edge, !is_actor));
-                            }
+            // add neighbors to queue
+            match target_list.get(current) {
+                Some(edges) => {
+                    for edge in edges {
+                        // check if the edge is the right node
+                        if edge == destination {
+                            found = true;
+                            visited.insert(edge, current);
+                            break;
+                        // make sure edge hasn't been visited & isn't already in the queue
+                        } else if visited.get(edge) == None 
+                        && queue.iter().all(|(i, _, _)| i != &edge) {
+                            queue.push((edge, current, !is_actor));
                         }
                     }
-                    None => {}
                 }
+                None => {}
             }
         }
 
-        if found {
-            return Some(visited);
-        } else {
-            return None;
-        }
+        // return visited nodes so a trail can be recreated
+        if found { Some(visited) } else { None }
     }
 
-    pub fn generate_path(self: &ImdbGraph, keys: HashSet<&String>, source: &String, destination: &String) -> String {
+    pub fn generate_path(
+        self: &ImdbGraph, 
+        keys: HashMap<&String, &String>,
+        source: &String,
+        destination: &String
+    ) -> String {
+        // track our progress through the graph
         let mut names: Vec<String> = Vec::new();
-        let mut current_node = source;
+
+        // store the current node and wheter it is an actor
+        let mut current = destination;
         let mut is_actor = true;
-        while current_node != destination {
+        while current != source {
+            // store the name(!) of the current node
             let target_list = if is_actor {
                 &self.actors } else { &self.titles };
-            names.push(target_list.get(current_node).unwrap().clone());
+            names.push(target_list.get(current).unwrap().clone());
 
-            current_node = keys.get(current_node).unwrap();
+            // crawl back one level
+            current = keys.get(current).unwrap();
             is_actor = !is_actor;
         }
 
+        // push the source (since we know we reached it) and make it readable
+        names.push(self.actors.get(source).unwrap().clone());
+        names.reverse();
         names.join(", ")
     }
 }

@@ -41,11 +41,13 @@ fn ask_user(graph: &ImdbGraph) -> String {
 fn choose_match(graph: &ImdbGraph, matches: Vec<String>) -> String {
     println!("Choose a match by typing the corresponding number");
     let mut index = 1;
+    let mut valid_matches: Vec<&String> = Vec::new();
     for key in &matches {
         let movies = graph.print_edges(key);
         match movies {
           None => {},
           Some(data) => {
+            valid_matches.push(key);
             println!("{} - {}", index, data);
             index += 1;
           }
@@ -67,7 +69,7 @@ fn choose_match(graph: &ImdbGraph, matches: Vec<String>) -> String {
                     return choose_match(graph, matches);
                 },
                 Ok(index) => {
-                    let key = matches.get(index-1).unwrap();
+                    let key = *valid_matches.get(index-1).unwrap();
                     return key.clone();
                 }
             }
