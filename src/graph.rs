@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::collections::HashMap;
 
 pub struct Diagnostics {
@@ -89,14 +90,14 @@ impl ImdbGraph {
         destination: &String,
     ) -> Option<HashMap<&String, &String>> {
         // create a list of future and visited nodes
-        let mut queue = vec![(source, source, true)];
+        let mut queue = VecDeque::from(vec![(source, source, true)]);
         let mut visited: HashMap<&String, &String> = HashMap::new();
 
         // iterate through queue
         let mut found = false;
         while !queue.is_empty() && !found {
             // bump the queue and add to visited nodes
-            let (current, source, is_actor) = queue.pop().unwrap();
+            let (current, source, is_actor) = queue.pop_front().unwrap();
             visited.insert(current, source);
 
             // determine what hashmap to draw from
@@ -115,7 +116,7 @@ impl ImdbGraph {
                         // make sure edge hasn't been visited & isn't already in the queue
                         } else if visited.get(edge) == None 
                         && queue.iter().all(|(i, _, _)| i != &edge) {
-                            queue.push((edge, current, !is_actor));
+                            queue.push_back((edge, current, !is_actor));
                         }
                     }
                 }
@@ -124,6 +125,7 @@ impl ImdbGraph {
         }
 
         // return visited nodes so a trail can be recreated
+        println!("Done navigating the graph, generating path:");
         if found { Some(visited) } else { None }
     }
 
@@ -153,6 +155,6 @@ impl ImdbGraph {
         // push the source (since we know we reached it) and make it readable
         names.push(self.actors.get(source).unwrap().clone());
         names.reverse();
-        names.join(", ")
+        names.join(" -> ")
     }
 }
