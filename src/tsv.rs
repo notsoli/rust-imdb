@@ -44,18 +44,17 @@ pub fn process_actors(graph: &mut ImdbGraph, file_path: &str) {
                 graph.diagnostics.invalid_actor_records += 1;
             }
             Ok(record) => {
-                // get the primary actor role
-                let mut primary_role = "";
-                let primary_role_result = record[4].split(",").next();
-                match primary_role_result {
-                    None => {
-                        println!("Error processing actor roles.")
+                // make sure the person has acted
+                let roles = record[4].split(",");
+                let mut has_acted = false;
+                for role in roles {
+                    if role == "actor" || role == "actress" {
+                        has_acted = true;
+                        break;
                     }
-                    Some(data) => primary_role = data,
                 }
 
-                // make sure person is an actor or actress
-                if primary_role == "actor" || primary_role == "actress" {
+                if has_acted {
                     // identify involved projects that exist in parsed title data
                     for title in record[5].split(",") {
                         let result = graph.titles.get(title);
